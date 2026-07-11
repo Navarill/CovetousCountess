@@ -33,7 +33,7 @@ local function OverwritePopulateChatterOption(interaction)
 			return
 		end
 		-- the player has to be on the TG map
-		if GetZoneId(GetUnitZoneIndex("player")) ~= 821 then
+		if GetZoneId(GetUnitZoneIndex("player")) ~= 753 and GetZoneId(GetUnitZoneIndex("player")) ~= 821 then
 			return PopulateChatterOption(self, index, fun, txt, type, ...)
 		end
 		-- check if the current dialog starts the Covetous Countess quest
