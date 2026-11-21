@@ -1,55 +1,58 @@
--- little hack to get the current interactable name
-local lastInteractableName
-ZO_PreHook(INTERACTIVE_WHEEL_MANAGER, "StartInteraction", function()
-	local _, name = GetGameCameraInteractableActionInfo()
-	lastInteractableName = name
-end)
+local VALID_ZONES = {
+	[753] = true, -- Thieves Den
+	[821] = true, -- Hew's Bane
+}
 
--- localized names of the tip board
-local tipBoard = {
-	["Tip Board"] = true,
+local TIP_BOARD_NAMES = {
+	["Tip Board"]          = true,
 	["Brett für Aufträge"] = true,
+	["Tablón de informes"] = true,
 	["Tableau des tuyaux"] = true,
-	["Доска объявлений"] = true,
-	-- missing for JP
+	["ジョブボード"]         = true,
+	["Доска объявлений"]   = true,
+	["提示板"]              = true,
 }
 
--- first few characters of the covetous countess quest dialog
-local dialog = {
-	["eemed th"] = true,
-	["ochgesch"] = true,
-	["Voleurs "] = true,
-	["осто"] = true,
-	-- missing for JP
+-- String ID 3952276-6749
+local QUEST_SUBSTRINGS = {
+	de = "Hochgeschätzte Diebe",
+	en = "Esteemed thieves",
+	es = "Estimados ladrones",
+	fr = "Voleurs bien-aimés",
+	jp = "立派な盗賊達",
+	ru = "Досточтимые воры",
+	zh = "诸位好汉",
 }
 
--- override the chatter option function, so only the Covetous Countess quest can be started
-local function OverwritePopulateChatterOption(interaction)
-	local PopulateChatterOption = interaction.PopulateChatterOption
-	interaction.PopulateChatterOption = function(self, index, fun, txt, type, ...)
-		-- check if the current target is the tip board
-		if not tipBoard[lastInteractableName] then
-			PopulateChatterOption(self, index, fun, txt, type, ...)
-			return
-		end
-		-- the player has to be on the TG map
-		if GetZoneId(GetUnitZoneIndex("player")) ~= 753 and GetZoneId(GetUnitZoneIndex("player")) ~= 821 then
-			return PopulateChatterOption(self, index, fun, txt, type, ...)
-		end
-		-- check if the current dialog starts the Covetous Countess quest
-		local offerText = GetOfferedQuestInfo()
-		if not dialog[string.sub(offerText,5,12)] then
-			-- if it is a different quest, only display the goodbye option
-			if type ~= CHATTER_GOODBYE then
-				return
-			end
-			PopulateChatterOption(self, 1, fun, txt, type, ...)
-			return
-		end
-		PopulateChatterOption(self, index, fun, txt, type, ...)
-		lastInteractableName = nil -- set this variable to nil, so the next dialog step isn't manipulated
-	end
+local function IsCountessQuest(offerText, expectedSub)
+	if offerText == "" then return false end
+	return string.find(string.sub(offerText, 1, 40), expectedSub, 1, true) ~= nil
 end
 
-OverwritePopulateChatterOption(GAMEPAD_INTERACTION)
-OverwritePopulateChatterOption(INTERACTION) -- keyboard
+local function HookChatter(interaction)
+	ZO_PreHook(interaction, "PopulateChatterOption", function(self, index, fun, txt, chatterType, ...)
+		local expectedSub = QUEST_SUBSTRINGS[GetCVar("language.2")]
+		if not expectedSub then return false end
+
+		if not VALID_ZONES[GetZoneId(GetUnitZoneIndex("player"))] then return false end
+
+		local _, rawName = GetGameCameraInteractableActionInfo()
+		if not TIP_BOARD_NAMES[zo_strformat("<<1>>", rawName)] then return false end
+
+		if IsCountessQuest(GetOfferedQuestInfo(), expectedSub) then return false end
+
+		if chatterType ~= CHATTER_GOODBYE then
+			return true
+		end
+
+		if index ~= 1 then
+			self:PopulateChatterOption(1, fun, txt, chatterType, ...)
+			return true
+		end
+
+		return false
+	end)
+end
+
+HookChatter(GAMEPAD_INTERACTION)
+HookChatter(INTERACTION)

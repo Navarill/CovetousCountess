@@ -1,6 +1,7 @@
 ## Title: CovetousCountess
-## Version: 5
-## Author: Shinni
+## Version: 6
+## AddOnVersion: 6
+## Author: Navarill, Shinni
 ## APIVersion: 101051 101052
 
 CovetousCountess.lua
