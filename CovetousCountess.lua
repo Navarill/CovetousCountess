@@ -19,7 +19,7 @@ local dialog = {
 	["eemed th"] = true,
 	["ochgesch"] = true,
 	["Voleurs "] = true,
-	-- missing for RU
+	["осто"] = true,
 	-- missing for JP
 }
 
